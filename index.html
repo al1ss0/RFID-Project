@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Monitoramento da Sala</title>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.8.2.7.js"></script>
+</head>
+
+<body>
+    <h1>Monitoramento da Sala</h1>
+
+    <div>
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        const showMessage = (msg) => {
+            var message = document.createElement('div');
+            message.innerText = msg;
+            document.getElementById('messages').appendChild(message);
+        };
+
+        let pubnub;
+
+        const setupPubNub = () => {
+            pubnub = new PubNub({
+                publishKey: "pub-c-a99ddf51-aea9-4a9e-b597-badb9c1120f5",
+                subscribeKey: "sub-c-fa0c496a-d5ce-478b-a49c-24c214f7b54f",
+                userId: "monitoramento-sala"
+            });
+
+            const channel = pubnub.channel('meu_canal');
+            const subscription = channel.subscription();
+
+            subscription.onMessage = (messageEvent) => {
+                console.log(messageEvent.message);
+
+                if (messageEvent.message.text) {
+                    showMessage(messageEvent.message.text);
+                } else if (messageEvent.message.mensagem) {
+                    showMessage(messageEvent.message.mensagem);
+                } else if (messageEvent.message.message) {
+                    showMessage(messageEvent.message.message);
+                } else {
+                    showMessage(JSON.stringify(messageEvent.message));
+                }
+            };
+
+            subscription.subscribe();
+
+            showMessage("Monitoramento iniciado. Aguardando eventos...");
+        };
+
+        window.onload = setupPubNub;
+    </script>
+</body>
+
+</html>

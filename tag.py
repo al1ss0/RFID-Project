@@ -17,6 +17,7 @@ GPIO.setup(LED_VERDE, GPIO.OUT)
 GPIO.setup(LED_VERMELHO, GPIO.OUT)
 GPIO.setup(BUZZER, GPIO.OUT)
 
+
 colaboradores = {
     553307625663: {"nome": "Julia", "autorizado": True},
     771439528262: {"nome": "Visitante", "autorizado": False}

@@ -1,8 +1,9 @@
 Data/Hora,Tag,Nome,Tipo de evento,Status
-05/05/2026 21:29:51,553307625663,Julia,ENTRADA,AUTORIZADO
+06/05/2026 19:46:42,553307625663,Julia,ENTRADA,AUTORIZADO
+06/05/2026 19:46:55,553307625663,Julia,SAIDA,AUTORIZADO
 
 Resumo final
 Nome,Tempo total (min),Entradas,Tentativas negadas
-Julia,0.00,1,0
+Julia,0.22,1,0
 
 Tentativas de invasao,0
