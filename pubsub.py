@@ -18,6 +18,6 @@ class AsyncConn:
         subscription.subscribe()
 
     def publish(self, data: dict):
-        print("tentando enviar uma mensagem")
+        print("Enviando mensagem para PubNub:", data)
         self.pubnub.publish().channel(self.channel_name).message(data).sync()
 
