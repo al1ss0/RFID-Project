@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureAccess — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #00ff88;
+    --accent2: #ff3366;
+    --text: #e0e0f0;
+    --muted: #5a5a7a;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .grid-bg {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    padding: 3rem;
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    z-index: 1;
+  }
+  .logo {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    font-family: 'Space Mono', monospace;
+  }
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.3rem; font-family: 'Space Mono', monospace; }
+  .hint {
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.2);
+    color: var(--accent);
+    padding: 0.75rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  label {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    font-family: 'Space Mono', monospace;
+  }
+  input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.85rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    outline: none;
+    margin-bottom: 1.25rem;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--accent); }
+  button {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 1rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 0.5rem;
+  }
+  button:hover { opacity: 0.9; }
+  button:active { transform: scale(0.99); }
+  .error {
+    background: rgba(255,51,102,0.1);
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    padding: 0.75rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .corner {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-color: var(--accent);
+    border-style: solid;
+  }
+  .corner.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="card">
+  <div class="corner tl"></div>
+  <div class="corner br"></div>
+  <div class="logo">■ Sistema de Segurança</div>
+  <h1>SecureAccess</h1>
+  <p class="subtitle">// Área restrita — autenticação obrigatória</p>
+
+  <div class="hint">
+    Usuário teste: <strong>admin</strong><br>
+    Senha teste: <strong>123456</strong>
+  </div>
+
+  <div class="error" id="error">Credenciais inválidas. Tente novamente.</div>
+
+  <form id="loginForm">
+    <label>Usuário</label>
+    <input type="text" id="username" placeholder="admin" autocomplete="off">
+
+    <label>Senha</label>
+    <input type="password" id="password" placeholder="••••••••">
+
+    <button type="submit">Entrar →</button>
+  </form>
+</div>
+
+//endpoint
+
+<script>
+const USER_FAKE = "admin";
+const PASSWORD_FAKE = "123456";
+
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (username === USER_FAKE && password === PASSWORD_FAKE) {
+    localStorage.setItem("secureaccess_logged", "true");
+    localStorage.setItem("secureaccess_user", username);
+
+    window.location.href = "gerenciamento.html";
+  } else {
+    document.getElementById('error').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
