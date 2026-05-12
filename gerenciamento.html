@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureAccess — Gerenciamento</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0a0a0f; --surface:#12121a; --surface2:#1a1a26; --border:#1e1e2e; --accent:#00ff88; --accent2:#ff3366; --warn:#ffaa00; --text:#e0e0f0; --muted:#5a5a7a; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; }
+  .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:var(--surface); border-right:1px solid var(--border); padding:2rem 1.5rem; display:flex; flex-direction:column; gap:0.5rem; z-index:100; }
+  .sidebar-logo { font-size:0.65rem; letter-spacing:0.3em; color:var(--accent); text-transform:uppercase; font-family:'Space Mono',monospace; margin-bottom:1rem; }
+  .user-box { color:var(--muted); font-family:'Space Mono',monospace; font-size:0.7rem; margin-bottom:1.2rem; border:1px solid var(--border); padding:0.7rem; }
+  .nav-item { padding:0.75rem 1rem; border:1px solid transparent; cursor:pointer; font-size:0.85rem; letter-spacing:0.05em; color:var(--muted); transition:all 0.2s; display:flex; align-items:center; gap:0.75rem; }
+  .nav-item:hover { color:var(--text); border-color:var(--border); }
+  .nav-item.active { color:var(--accent); border-color:var(--accent); background:rgba(0,255,136,0.05); }
+  .sidebar-bottom { margin-top:auto; }
+  .logout-btn { width:100%; padding:0.75rem; background:transparent; border:1px solid var(--accent2); color:var(--accent2); font-family:'Syne',sans-serif; cursor:pointer; font-size:0.8rem; letter-spacing:0.1em; transition:background 0.2s; }
+  .logout-btn:hover { background:rgba(255,51,102,0.1); }
+  .main { margin-left:240px; padding:2rem; min-height:100vh; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .page-header { margin-bottom:2rem; }
+  .page-title { font-size:1.75rem; font-weight:800; }
+  .page-sub { color:var(--muted); font-family:'Space Mono',monospace; font-size:0.75rem; margin-top:0.25rem; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:2rem; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); padding:1.25rem 1.5rem; border-top:2px solid var(--accent); }
+  .stat-card.warn { border-top-color:var(--warn); }
+  .stat-card.danger { border-top-color:var(--accent2); }
+  .stat-num { font-size:2rem; font-weight:800; line-height:1; }
+  .stat-label { font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:0.25rem; font-family:'Space Mono',monospace; }
+  .table-wrap { background:var(--surface); border:1px solid var(--border); overflow:auto; }
+  .table-header { padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; padding:0.75rem 1.5rem; font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); font-family:'Space Mono',monospace; border-bottom:1px solid var(--border); }
+  td { padding:0.85rem 1.5rem; border-bottom:1px solid var(--border); font-size:0.85rem; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--surface2); }
+  .badge { display:inline-block; padding:0.2rem 0.6rem; font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Space Mono',monospace; }
+  .badge-green { background:rgba(0,255,136,0.1); color:var(--accent); }
+  .badge-red { background:rgba(255,51,102,0.1); color:var(--accent2); }
+  .badge-warn { background:rgba(255,170,0,0.1); color:var(--warn); }
+  .badge-muted { background:rgba(90,90,122,0.2); color:var(--muted); }
+  .btn { padding:0.5rem 1rem; border:1px solid var(--border); background:transparent; color:var(--text); font-family:'Syne',sans-serif; cursor:pointer; font-size:0.8rem; transition:all 0.2s; letter-spacing:0.05em; }
+  .btn-primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+  .btn-danger { border-color:var(--accent2); color:var(--accent2); }
+  .btn-sm { padding:0.3rem 0.65rem; font-size:0.75rem; }
+  .btn:hover { opacity:0.85; }
+  .btn-group { display:flex; gap:0.5rem; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-top:2px solid var(--accent); padding:2rem; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; }
+  .modal-title { font-size:1.25rem; font-weight:800; margin-bottom:1.5rem; }
+  .form-group { margin-bottom:1.25rem; }
+  .form-label { display:block; font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem; font-family:'Space Mono',monospace; }
+  .form-input, .form-select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:0.75rem 1rem; font-family:'Space Mono',monospace; font-size:0.85rem; outline:none; transition:border-color 0.2s; }
+  .form-input:focus, .form-select:focus { border-color:var(--accent); }
+  .form-select option { background:var(--surface); }
+  .modal-footer { display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem; }
+  .log-item { padding:0.75rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:1rem; font-size:0.82rem; }
+  .log-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .log-dot.entrada { background:var(--accent); }
+  .log-dot.saida { background:#4488ff; }
+  .log-dot.negado { background:var(--warn); }
+  .log-dot.invasao { background:var(--accent2); }
+  .log-time { color:var(--muted); font-family:'Space Mono',monospace; font-size:0.7rem; margin-left:auto; white-space:nowrap; }
+  input[type=search] { background:var(--bg); border:1px solid var(--border); color:var(--text); padding:0.5rem 1rem; font-family:'Space Mono',monospace; font-size:0.8rem; outline:none; width:220px; }
+  input[type=search]:focus { border-color:var(--accent); }
+  @media (max-width:800px) { .sidebar { position:static; width:100%; height:auto; } .main { margin-left:0; padding:1rem; } .page-header { flex-direction:column; align-items:flex-start!important; gap:1rem; } input[type=search] { width:100%; } }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">■ SecureAccess</div>
+  <div class="user-box">logado como:<br><span id="logged-user">admin</span></div>
+  <div class="nav-item active" onclick="showPage(event, 'overview')">◈ &nbsp;Visão Geral</div>
+  <div class="nav-item" onclick="showPage(event, 'colaboradores')">◉ &nbsp;Colaboradores</div>
+  <div class="nav-item" onclick="showPage(event, 'logs')">◎ &nbsp;Logs de Acesso</div>
+  <div class="nav-item" onclick="showPage(event, 'monitoramento')">◇ &nbsp;Monitoramento</div>
+  <div class="sidebar-bottom"><button class="logout-btn" onclick="logout()">Sair →</button></div>
+</div>
+
+<div class="main">
+  <div class="page active" id="page-overview">
+    <div class="page-header">
+      <div class="page-title">Visão Geral</div>
+      <div class="page-sub">// dashboard de acesso — preparado para endpoints</div>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-num" id="s-total">—</div><div class="stat-label">Colaboradores</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-dentro">—</div><div class="stat-label">Dentro agora</div></div>
+      <div class="stat-card warn"><div class="stat-num" id="s-negado">—</div><div class="stat-label">Negados hoje</div></div>
+      <div class="stat-card danger"><div class="stat-num" id="s-invasao">—</div><div class="stat-label">Invasões hoje</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><span style="font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;">Últimos eventos</span></div>
+      <div id="recent-logs"></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-colaboradores">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div class="page-title">Colaboradores</div>
+        <div class="page-sub">// cadastro, edição e permissões de acesso</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ Novo Colaborador</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><input type="search" id="search" placeholder="Buscar colaborador..." oninput="filterTable()"></div>
+      <table>
+        <thead><tr><th>Nome</th><th>Matrícula</th><th>Cargo</th><th>Tag RFID</th><th>Acesso</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="colabs-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-logs">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div class="page-title">Logs de Acesso</div>
+        <div class="page-sub">// histórico completo de entradas, saídas e tentativas</div>
+      </div>
+      <button class="btn btn-primary" onclick="exportCsv()">↓ Exportar CSV</button>
+    </div>
+    <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
+      <button class="btn btn-sm" onclick="filterLogs('')">Todos</button>
+      <button class="btn btn-sm" onclick="filterLogs('entrada')">Entradas</button>
+      <button class="btn btn-sm" onclick="filterLogs('saida')">Saídas</button>
+      <button class="btn btn-sm" onclick="filterLogs('negado')">Negados</button>
+      <button class="btn btn-sm" onclick="filterLogs('invasao')">Invasões</button>
+    </div>
+    <div class="table-wrap" id="logs-wrap"></div>
+  </div>
+
+  <div class="page" id="page-monitoramento">
+    <div class="page-header">
+      <div class="page-title">Monitoramento em Tempo Real</div>
+      <div class="page-sub">// página para segurança — atualização via polling</div>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-num" id="m-dentro">—</div><div class="stat-label">Dentro da sala</div></div>
+      <div class="stat-card warn"><div class="stat-num" id="m-negadas">—</div><div class="stat-label">Tentativas negadas</div></div>
+      <div class="stat-card danger"><div class="stat-num" id="m-invasoes">—</div><div class="stat-label">Tags desconhecidas</div></div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:1rem;">
+      <div class="table-header"><span style="font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;">Colaboradores atualmente dentro da sala</span></div>
+      <div id="monitor-dentro"></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><span style="font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;">Alertas recentes</span></div>
+      <div id="monitor-alertas"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Novo Colaborador</div>
+    <input type="hidden" id="edit-id">
+    <div class="form-group"><label class="form-label">Nome completo</label><input class="form-input" id="f-nome" placeholder="Ex: João Silva"></div>
+    <div class="form-group"><label class="form-label">Matrícula</label><input class="form-input" id="f-matricula" placeholder="Ex: 2024001"></div>
+    <div class="form-group"><label class="form-label">Cargo / Função</label><input class="form-input" id="f-cargo" placeholder="Ex: Designer de Personagens"></div>
+    <div class="form-group"><label class="form-label">Tag RFID</label><input class="form-input" id="f-rfid" placeholder="ID numérico do cartão"></div>
+    <div class="form-group"><label class="form-label">Acesso à sala do projeto</label><select class="form-select" id="f-acesso"><option value="1">✓ Permitido</option><option value="0">✗ Negado</option></select></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="f-ativo"><option value="1">Ativo</option><option value="0">Inativo</option></select></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveColab()">Salvar →</button></div>
+  </div>
+</div>
+
+<script>
+/*
+  ============================================================
+  CONFIGURAÇÃO PARA INTEGRAR COM BACKEND
+  ============================================================
+
+  Enquanto a API NÃO estiver pronta:
+  const USE_FAKE_DATA = true;
+
+  Quando a API estiver pronta:
+  const USE_FAKE_DATA = false;
+
+  URL do backend, exemplo Flask:
+  const API_BASE_URL = "http://localhost:5000";
+*/
+const API_BASE_URL = "http://127.0.0.1:5000";
+const USE_FAKE_DATA = true;
+
+/*
+  ============================================================
+  ENDPOINTS QUE O BACKEND PRECISA TER
+  ============================================================
+
+  Login:
+  POST /api/login
+
+  Colaboradores:
+  GET    /api/colaboradores
+  GET    /api/colaboradores/:id
+  POST   /api/colaboradores
+  PUT    /api/colaboradores/:id
+  DELETE /api/colaboradores/:id
+
+  Logs:
+  GET /api/logs?limit=100
+  GET /api/logs?limit=100&tipo=entrada
+  GET /api/logs/export/csv
+
+  Monitoramento:
+  GET /api/monitor/status
+*/
+
+/*
+  ============================================================
+  AUTENTICAÇÃO SIMPLES
+  ============================================================
+*/
+if (localStorage.getItem("secureaccess_logged") !== "true") {
+  window.location.href = "login.html";
+}
+document.getElementById("logged-user").textContent = localStorage.getItem("secureaccess_user") || "admin";
+
+/*
+  ============================================================
+  FUNÇÃO PADRÃO PARA CHAMAR ENDPOINTS
+  ============================================================
+
+  Toda chamada real ao backend passa por aqui.
+*/
+async function apiFetch(endpoint, options = {}) {
+  const token = localStorage.getItem("secureaccess_token");
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erro na API: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/*
+  ============================================================
+  DADOS FAKE TEMPORÁRIOS
+  ============================================================
+
+  Quando USE_FAKE_DATA = false, esses dados deixam de ser usados.
+*/
+let allColabs = [
+  { id:1, nome:"Maria Carolina", matricula:"2026001", cargo:"Desenvolvedora", rfid_tag:"ABC123456", tem_acesso:1, ativo:1, dentro_sala:1 },
+  { id:2, nome:"João Silva", matricula:"2026002", cargo:"Designer", rfid_tag:"XYZ999", tem_acesso:0, ativo:1, dentro_sala:0 },
+  { id:3, nome:"Ana Souza", matricula:"2026003", cargo:"QA Tester", rfid_tag:"RFID777", tem_acesso:1, ativo:0, dentro_sala:0 },
+  { id:4, nome:"Lucas Pereira", matricula:"2026004", cargo:"Artista 3D", rfid_tag:"LUCAS444", tem_acesso:1, ativo:1, dentro_sala:1 }
+];
+
+let fakeLogs = [
+  { tipo:"entrada", colaborador_nome:"Maria Carolina", tag_rfid:"ABC123456", descricao:"Entrada autorizada", timestamp:"2026-05-11T19:30:00" },
+  { tipo:"entrada", colaborador_nome:"Lucas Pereira", tag_rfid:"LUCAS444", descricao:"Entrada autorizada", timestamp:"2026-05-11T19:42:00" },
+  { tipo:"saida", colaborador_nome:"Ana Souza", tag_rfid:"RFID777", descricao:"Saída registrada", timestamp:"2026-05-11T20:10:00" },
+  { tipo:"negado", colaborador_nome:"João Silva", tag_rfid:"XYZ999", descricao:"Colaborador cadastrado, mas sem permissão de acesso", timestamp:"2026-05-11T20:15:00" },
+  { tipo:"invasao", colaborador_nome:null, tag_rfid:"TAG999", descricao:"Tentativa com tag RFID desconhecida", timestamp:"2026-05-11T20:20:00" }
+];
+
+function showPage(e, name) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.getElementById("page-" + name).classList.add("active");
+  if (e && e.currentTarget) e.currentTarget.classList.add("active");
+
+  if (name === "overview") loadOverview();
+  if (name === "colaboradores") loadColabs();
+  if (name === "logs") loadLogs("");
+  if (name === "monitoramento") loadMonitoring();
+}
+
+/*
+  ============================================================
+  DASHBOARD / VISÃO GERAL
+  ============================================================
+
+  Endpoint real usado:
+  GET /api/monitor/status
+
+  Resposta esperada:
+  {
+    "dentro_da_sala": [],
+    "tentativas_negadas": [],
+    "tentativas_invasao": [],
+    "ultimas_entradas": [],
+    "ultimas_saidas": [],
+    "alertas": []
+  }
+*/
+async function loadOverview() {
+  if (USE_FAKE_DATA) {
+    const dentroDaSala = allColabs.filter(c => c.dentro_sala && c.ativo);
+    const tentativasNegadas = fakeLogs.filter(l => l.tipo === "negado");
+    const tentativasInvasao = fakeLogs.filter(l => l.tipo === "invasao");
+
+    document.getElementById("s-total").textContent = allColabs.length;
+    document.getElementById("s-dentro").textContent = dentroDaSala.length;
+    document.getElementById("s-negado").textContent = tentativasNegadas.length;
+    document.getElementById("s-invasao").textContent = tentativasInvasao.length;
+
+    renderRecentLogs([...fakeLogs].sort((a,b) => b.timestamp.localeCompare(a.timestamp)).slice(0,10));
+    return;
+  }
+
+  // AQUI ENTRA O ENDPOINT REAL DO BACKEND
+  const colabs = await apiFetch("/api/colaboradores");
+  const status = await apiFetch("/api/monitor/status");
+
+  document.getElementById("s-total").textContent = colabs.length;
+  document.getElementById("s-dentro").textContent = status.dentro_da_sala.length;
+  document.getElementById("s-negado").textContent = status.tentativas_negadas.length;
+  document.getElementById("s-invasao").textContent = status.tentativas_invasao.length;
+
+  const logs = [...status.ultimas_entradas, ...status.ultimas_saidas, ...status.alertas]
+    .sort((a,b) => b.timestamp.localeCompare(a.timestamp))
+    .slice(0,10);
+
+  renderRecentLogs(logs);
+}
+
+function renderRecentLogs(logs) {
+  document.getElementById("recent-logs").innerHTML = logs.map(l => `
+    <div class="log-item">
+      <div class="log-dot ${l.tipo}"></div>
+      <span>${l.descricao || l.tipo}</span>
+      <span class="log-time">${formatDate(l.timestamp)}</span>
+    </div>
+  `).join("") || `<div class="log-item" style="color:var(--muted)">Nenhum evento hoje.</div>`;
+}
+
+/*
+  ============================================================
+  COLABORADORES
+  ============================================================
+
+  JSON que o front envia ao cadastrar/editar:
+  {
+    "nome": "Maria Carolina",
+    "matricula": "2026001",
+    "cargo": "Desenvolvedora",
+    "rfid_tag": "ABC123456",
+    "tem_acesso": 1,
+    "ativo": 1
+  }
+*/
+async function loadColabs() {
+  if (USE_FAKE_DATA) {
+    renderColabs(allColabs);
+    return;
+  }
+
+  // AQUI ENTRA O ENDPOINT REAL:
+  // GET /api/colaboradores
+  allColabs = await apiFetch("/api/colaboradores");
+  renderColabs(allColabs);
+}
+
+function renderColabs(list) {
+  document.getElementById("colabs-tbody").innerHTML = list.map(c => `
+    <tr>
+      <td>${c.nome}</td>
+      <td><span style="font-family:'Space Mono',monospace;font-size:0.8rem">${c.matricula}</span></td>
+      <td>${c.cargo || "—"}</td>
+      <td><span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--muted)">${c.rfid_tag || "—"}</span></td>
+      <td><span class="badge ${c.tem_acesso ? "badge-green" : "badge-red"}">${c.tem_acesso ? "Permitido" : "Negado"}</span></td>
+      <td><span class="badge ${c.ativo ? "badge-green" : "badge-muted"}">${c.ativo ? "Ativo" : "Inativo"}</span></td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-sm" onclick="editColab(${c.id})">Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteColab(${c.id}, '${escapeQuote(c.nome)}')">×</button>
+        </div>
+      </td>
+    </tr>
+  `).join("") || `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Nenhum colaborador encontrado.</td></tr>`;
+}
+
+function filterTable() {
+  const q = document.getElementById("search").value.toLowerCase();
+  renderColabs(allColabs.filter(c =>
+    c.nome.toLowerCase().includes(q) ||
+    c.matricula.toLowerCase().includes(q) ||
+    (c.cargo || "").toLowerCase().includes(q) ||
+    (c.rfid_tag || "").toLowerCase().includes(q)
+  ));
+}
+
+function openModal(data = null) {
+  document.getElementById("modal-title").textContent = data ? "Editar Colaborador" : "Novo Colaborador";
+  document.getElementById("edit-id").value = data?.id || "";
+  document.getElementById("f-nome").value = data?.nome || "";
+  document.getElementById("f-matricula").value = data?.matricula || "";
+  document.getElementById("f-cargo").value = data?.cargo || "";
+  document.getElementById("f-rfid").value = data?.rfid_tag || "";
+  document.getElementById("f-acesso").value = data?.tem_acesso ?? 1;
+  document.getElementById("f-ativo").value = data?.ativo ?? 1;
+  document.getElementById("modal").classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("open");
+}
+
+async function editColab(id) {
+  if (USE_FAKE_DATA) {
+    const c = allColabs.find(item => item.id === id);
+    if (!c) return alert("Colaborador não encontrado.");
+    openModal(c);
+    return;
+  }
+  
+
+  // AQUI ENTRA O ENDPOINT REAL:
+  // GET /api/colaboradores/:id
+  const c = await apiFetch(`/api/colaboradores/${id}`);
+  openModal(c);
+}
+
+async function saveColab() {
+  const id = document.getElementById("edit-id").value;
+
+  // AQUI O FRONT SERIALIZA OS DADOS DA TELA PARA ENVIAR AO BACKEND
+  const payload = {
+    nome: document.getElementById("f-nome").value.trim(),
+    matricula: document.getElementById("f-matricula").value.trim(),
+    cargo: document.getElementById("f-cargo").value.trim(),
+    rfid_tag: document.getElementById("f-rfid").value.trim(),
+    tem_acesso: parseInt(document.getElementById("f-acesso").value),
+    ativo: parseInt(document.getElementById("f-ativo").value)
+  };
+
+  if (!payload.nome || !payload.matricula || !payload.rfid_tag) {
+    alert("Preencha nome, matrícula e tag RFID.");
+    return;
+  }
+
+  if (USE_FAKE_DATA) {
+    const fakePayload = { ...payload, id: id ? parseInt(id) : Date.now(), dentro_sala: 0 };
+
+    if (id) {
+      allColabs = allColabs.map(c => c.id === parseInt(id) ? { ...c, ...fakePayload, dentro_sala: c.dentro_sala || 0 } : c);
+    } else {
+      allColabs.push(fakePayload);
+      fakeLogs.unshift({ tipo:"entrada", colaborador_nome:payload.nome, tag_rfid:payload.rfid_tag, descricao:"Colaborador cadastrado no sistema", timestamp:new Date().toISOString() });
+    }
+
+    closeModal();
+    renderColabs(allColabs);
+    loadOverview();
+    loadMonitoring();
+    return;
+  }
+
+  if (id) {
+    // AQUI ENTRA O ENDPOINT REAL DE EDIÇÃO:
+    // PUT /api/colaboradores/:id
+    await apiFetch(`/api/colaboradores/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+  } else {
+    // AQUI ENTRA O ENDPOINT REAL DE CADASTRO:
+    // POST /api/colaboradores
+    await apiFetch("/api/colaboradores", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  closeModal();
+  await loadColabs();
+  await loadOverview();
+  await loadMonitoring();
+}
+
+async function deleteColab(id, nome) {
+  if (!confirm(`Remover "${nome}"?`)) return;
+
+  if (USE_FAKE_DATA) {
+    allColabs = allColabs.filter(c => c.id !== id);
+    fakeLogs.unshift({ tipo:"negado", colaborador_nome:nome, tag_rfid:"—", descricao:"Colaborador removido do sistema", timestamp:new Date().toISOString() });
+    renderColabs(allColabs);
+    loadOverview();
+    loadMonitoring();
+    return;
+  }
+
+  // AQUI ENTRA O ENDPOINT REAL DE EXCLUSÃO:
+  // DELETE /api/colaboradores/:id
+  await apiFetch(`/api/colaboradores/${id}`, { method: "DELETE" });
+
+  await loadColabs();
+  await loadOverview();
+  await loadMonitoring();
+}
+
+/*
+  ============================================================
+  LOGS
+  ============================================================
+*/
+async function loadLogs(tipo) {
+  let logs;
+
+  if (USE_FAKE_DATA) {
+    logs = [...fakeLogs];
+    if (tipo) logs = logs.filter(l => l.tipo === tipo);
+  } else {
+    // AQUI ENTRA O ENDPOINT REAL:
+    // GET /api/logs?limit=100
+    // GET /api/logs?limit=100&tipo=entrada
+    logs = await apiFetch(`/api/logs?limit=100${tipo ? "&tipo=" + tipo : ""}`);
+  }
+
+  logs.sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+
+  const typeLabel = { entrada:"Entrada", saida:"Saída", negado:"Negado", invasao:"Invasão" };
+  const typeColor = { entrada:"badge-green", saida:"badge-muted", negado:"badge-warn", invasao:"badge-red" };
+
+  document.getElementById("logs-wrap").innerHTML = `
+    <table>
+      <thead><tr><th>Tipo</th><th>Colaborador</th><th>Tag RFID</th><th>Descrição</th><th>Data/Hora</th></tr></thead>
+      <tbody>
+        ${logs.map(l => `
+          <tr>
+            <td><span class="badge ${typeColor[l.tipo] || "badge-muted"}">${typeLabel[l.tipo] || l.tipo}</span></td>
+            <td>${l.colaborador_nome || "—"}</td>
+            <td><span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--muted)">${l.tag_rfid || "—"}</span></td>
+            <td>${l.descricao || "—"}</td>
+            <td style="font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--muted)">${formatDate(l.timestamp)}</td>
+          </tr>
+        `).join("") || `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Nenhum registro encontrado.</td></tr>`}
+      </tbody>
+    </table>`;
+}
+
+function filterLogs(tipo) {
+  loadLogs(tipo);
+}
+
+/*
+  ============================================================
+  MONITORAMENTO
+  ============================================================
+
+  Endpoint real:
+  GET /api/monitor/status
+
+  Resposta esperada:
+  {
+    "dentro_da_sala": [],
+    "tentativas_negadas": [],
+    "tentativas_invasao": [],
+    "alertas": []
+  }
+*/
+async function loadMonitoring() {
+  let dentro, negadas, invasoes, alertas;
+
+  if (USE_FAKE_DATA) {
+    dentro = allColabs.filter(c => c.dentro_sala && c.ativo);
+    negadas = fakeLogs.filter(l => l.tipo === "negado");
+    invasoes = fakeLogs.filter(l => l.tipo === "invasao");
+    alertas = fakeLogs.filter(l => l.tipo === "negado" || l.tipo === "invasao").sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+  } else {
+    // AQUI ENTRA O ENDPOINT REAL:
+    const status = await apiFetch("/api/monitor/status");
+    dentro = status.dentro_da_sala;
+    negadas = status.tentativas_negadas;
+    invasoes = status.tentativas_invasao;
+    alertas = status.alertas;
+  }
+
+  document.getElementById("m-dentro").textContent = dentro.length;
+  document.getElementById("m-negadas").textContent = negadas.length;
+  document.getElementById("m-invasoes").textContent = invasoes.length;
+
+  document.getElementById("monitor-dentro").innerHTML = dentro.map(c => `
+    <div class="log-item">
+      <div class="log-dot entrada"></div>
+      <span>${c.nome} — ${c.cargo || "Sem cargo"}</span>
+      <span class="log-time">${c.rfid_tag}</span>
+    </div>
+  `).join("") || `<div class="log-item" style="color:var(--muted)">Nenhum colaborador dentro da sala.</div>`;
+
+  document.getElementById("monitor-alertas").innerHTML = alertas.map(l => `
+    <div class="log-item">
+      <div class="log-dot ${l.tipo}"></div>
+      <span>${l.descricao}</span>
+      <span class="log-time">${formatDate(l.timestamp)}</span>
+    </div>
+  `).join("") || `<div class="log-item" style="color:var(--muted)">Nenhum alerta recente.</div>`;
+}
+
+/*
+  ============================================================
+  EXPORTAR CSV
+  ============================================================
+*/
+function exportCsv() {
+  if (!USE_FAKE_DATA) {
+    // AQUI ENTRA O ENDPOINT REAL:
+    // GET /api/logs/export/csv
+    window.location.href = `${API_BASE_URL}/api/logs/export/csv`;
+    return;
+  }
+
+  const header = "tipo,colaborador_nome,tag_rfid,descricao,timestamp\n";
+  const rows = fakeLogs.map(l => [
+    l.tipo, l.colaborador_nome || "", l.tag_rfid || "", l.descricao || "", l.timestamp || ""
+  ].map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+
+  const csv = header + rows;
+  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "logs_secureaccess.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function formatDate(timestamp) {
+  if (!timestamp) return "—";
+  return timestamp.replace("T", " ").slice(0, 16);
+}
+
+function escapeQuote(text) {
+  return String(text).replaceAll("'", "\'");
+}
+
+function logout() {
+  localStorage.removeItem("secureaccess_logged");
+  localStorage.removeItem("secureaccess_user");
+  localStorage.removeItem("secureaccess_token");
+  window.location.href = "login.html";
+}
+
+loadOverview();
+loadColabs();
+loadLogs("");
+loadMonitoring();
+
+/*
+  Polling: atualiza a tela automaticamente a cada 15 segundos.
+  Se quiser mais rápido, diminua 15000 para 5000.
+*/
+setInterval(() => {
+  loadOverview();
+  loadMonitoring();
+}, 15000);
+</script>
+</body>
+</html>
