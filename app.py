@@ -4,8 +4,10 @@ import csv
 import os
 from datetime import datetime
 from pubsub import AsyncConn
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 pubnub = AsyncConn("Flask Application", "meu_canal")
 
 CSV_NAME = "relatorio_acessos.csv"

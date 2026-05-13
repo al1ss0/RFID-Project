@@ -55,28 +55,70 @@
 </div>
 
 <script>
-const API_BASE_URL = "http://127.0.0.1:5000";
+/*
+  ============================================================
+  CONFIGURAÇÃO DO ENDPOINT DO BACKEND
+  ============================================================
 
-// Se já estiver logado, vai direto para o painel
-if (localStorage.getItem("secureaccess_logged") === "true") {
-  window.location.href = "gerenciamento.html";
-}
+  Quando seus colegas terminarem o backend, coloque aqui a URL.
+  Exemplo com Flask local:
+  const API_BASE_URL = "http://localhost:5000";
+
+  Enquanto o backend não estiver pronto, deixe USE_FAKE_LOGIN = true.
+*/
+const API_BASE_URL = "http://127.0.0.1:5000";
+const USE_FAKE_LOGIN = false;
+
+/*
+  Login fake para testar o front.
+  Quando o endpoint /api/login existir, troque USE_FAKE_LOGIN para false.
+*/
+const USER_FAKE = "admin";
+const PASSWORD_FAKE = "123456";
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
-  const errorBox = document.getElementById("error");
 
-  errorBox.style.display = "none";
-
-  if (!username || !password) {
-    errorBox.textContent = "Preencha usuário e senha.";
-    errorBox.style.display = "block";
+  /*
+    ============================================================
+    PARTE FAKE — VALIDAÇÃO TEMPORÁRIA
+    ============================================================
+  */
+  if (USE_FAKE_LOGIN) {
+    if (username === USER_FAKE && password === PASSWORD_FAKE) {
+      localStorage.setItem("secureaccess_logged", "true");
+      localStorage.setItem("secureaccess_user", username);
+      window.location.href = "gerenciamento.html";
+    } else {
+      document.getElementById("error").style.display = "block";
+    }
     return;
   }
 
+  /*
+    ============================================================
+    ENDPOINT REAL DE LOGIN
+    ============================================================
+
+    O backend precisa criar:
+    POST /api/login
+
+    O front envia:
+    {
+      "username": "admin",
+      "password": "123456"
+    }
+
+    O backend responde:
+    {
+      "success": true,
+      "username": "admin",
+      "token": "opcional"
+    }
+  */
   try {
     const response = await fetch(`${API_BASE_URL}/login`, {
       method: "POST",
@@ -89,14 +131,14 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       })
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error || "Credenciais inválidas.");
+      throw new Error("Login inválido");
     }
 
+    const data = await response.json();
+
     localStorage.setItem("secureaccess_logged", "true");
-    localStorage.setItem("secureaccess_user", data.usuario?.usuario || username);
+    localStorage.setItem("secureaccess_user", data.username || username);
 
     if (data.token) {
       localStorage.setItem("secureaccess_token", data.token);
@@ -104,8 +146,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     window.location.href = "gerenciamento.html";
   } catch (error) {
-    errorBox.textContent = error.message || "Credenciais inválidas. Tente novamente.";
-    errorBox.style.display = "block";
+    document.getElementById("error").style.display = "block";
   }
 });
 </script>
